@@ -2,13 +2,25 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "png.h"
 #include "pixASCII.h"
 #include "util.h"
 
 #define MIN(x, y) (((x) < (y) ? (x) : (y)))
 #define MAX(x, y) (((x) > (y) ? (x) : (y)))
 
-int main() { // prints a gradient with 0.0625% noise
+int main() {
+    char **shadeMap;
+    RGB rgb = {0, 0, 0};
+
+    shadeMap = getShadeMap("asset/shades.bin");
+    getAscii(rgb, shadeMap);
+    freeStrArr(shadeMap, SHADERANGE);
+
+    read("test.png");
+}
+
+/*int main() { // prints a gradient with 0.0625% noise
     int i, r, n;
     char **shadeMap;
     RGB rgb;
@@ -30,4 +42,4 @@ int main() { // prints a gradient with 0.0625% noise
     freeStrArr(shadeMap, SHADERANGE);
 
     return 0;
-}
+}*/

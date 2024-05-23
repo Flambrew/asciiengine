@@ -25,7 +25,7 @@ void freeStrArr(char **arr, uint32_t len) {
 uint32_t bigEndianBlock(int *bytes) {
     uint32_t out, i;
     for (i = out = 0; i < 4; ++i) {
-        out = (out << 8) + bytes[i];
+        out = (out << 8) | bytes[i];
     }
     return out;
 }
