@@ -1,22 +1,27 @@
+#include <stdbool.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdio.h>
 
 #include "util.h"
 
-#define PNG_HEADER
+bool pngVerify(FILE *file) {
+    int i, PNG_HEADER[] = {137, 80, 78, 71, 13, 10, 26, 10};
+    for (i = 0; i < 8; ++i) {
+        if (PNG_HEADER[i] != getc(file)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 RGB *read(char *path) {
+    FILE *file;
+    RGB *bitmap;
 
-    FILE *file = fopen(path, "r");
+    file = fopen(path, "r");
 
-    uint32_t i;
-    uint8_t n;
-    for (i = 0; i < 16; ++i) {
-        printf("%d\n", getc(file));
-    }
+    if (!pngVerify(file)) return NULL;
 
     fclose(file);
-
     return NULL;
 }

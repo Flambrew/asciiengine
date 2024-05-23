@@ -1,19 +1,19 @@
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 #include <stdio.h>
 
 #include "util.h"
 
 #define MAXCHARS 10
+#define SHADERANGE 256
 
-static uint8_t getShadeHash(RGB rgb) {
+static int getShadeHash(RGB rgb) {
     return (rgb.red + rgb.green + rgb.blue) / 3;
 }
 
 char **getShadeMap(char *shadeBinPath) {
     char **shadeVals;
-    shadeVals = malloc(sizeof(char *) * 256);
+    shadeVals = malloc(sizeof(char *) * SHADERANGE);
 
     char c, *temp;
     FILE *shadeFile;
@@ -40,7 +40,7 @@ char **getShadeMap(char *shadeBinPath) {
     }
     
     temp = NULL;
-    for (i = 0; i < 256; ++i) {
+    for (i = 0; i < SHADERANGE; ++i) {
         if (shadeVals[i] == NULL) {
             if (temp == NULL) {
                 return NULL;
@@ -57,7 +57,7 @@ char **getShadeMap(char *shadeBinPath) {
 }
 
 char getAscii(RGB rgb, char **shadeMap) {
-    uint32_t len;
+    int len;
     char *chars, c;
 
     chars = shadeMap[getShadeHash(rgb)];

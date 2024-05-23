@@ -14,7 +14,7 @@ SRC_DIR = src
 INC_DIR = include
 
 # Object Directory
-OBJS = $(SRCS:.c=.o)
+OBJ_DIR = obj
 
 # Source files
 SRCS = $(wildcard $(SRC_DIR)/*.c)
@@ -28,9 +28,11 @@ $(TARGET): $(OBJS)
 
 # Rule to compile source files into object files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
 
 # Clean up object files and the target executable
 .PHONY: clean
 clean:
 	rm -f $(OBJ_DIR)/*.o $(TARGET)
+	rmdir obj
