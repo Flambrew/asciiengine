@@ -18,6 +18,8 @@ int main() {
     freeStrArr(shadeMap, SHADERANGE);
 
     read("test.png");
+
+    printf("boing\n");
 }
 
 /*int main() { // prints a gradient with 0.0625% noise

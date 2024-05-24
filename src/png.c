@@ -25,7 +25,7 @@ static bool pngVerify(FILE *file) {
 }
 
 static Chunk nextChunk(FILE *file) {
-    Chunk out = {0, 0, 0, 0};
+    Chunk out;
 
     uint8_t i;
     for (i = 0; i < 4; ++i) {
@@ -55,7 +55,7 @@ static void freeChunk(Chunk c) {
 
 RGB *read(char *path) {
     FILE *file;
-    RGB *bitmap;
+    // RGB *bitmap;
 
     file = fopen(path, "r");
 
