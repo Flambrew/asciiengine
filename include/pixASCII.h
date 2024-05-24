@@ -7,6 +7,6 @@
 #define SHADERANGE 256
 
 char **getShadeMap(char *shadeBinPath);
-char getAscii(RGB rgb, char **shadeMap);
+char getAscii(RGB *rgb, char **shadeMap);
 
 #endif

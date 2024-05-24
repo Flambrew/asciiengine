@@ -14,7 +14,7 @@ int main() {
     RGB rgb = {0, 0, 0};
 
     shadeMap = getShadeMap("asset/shades.bin");
-    getAscii(rgb, shadeMap);
+    getAscii(&rgb, shadeMap);
     freeStrArr(shadeMap, SHADERANGE);
 
     read("test.png");

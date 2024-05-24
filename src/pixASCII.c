@@ -7,8 +7,8 @@
 #define MAXCHARS 10
 #define SHADERANGE 256
 
-static int getShadeHash(RGB rgb) {
-    return (rgb.red + rgb.green + rgb.blue) / 3;
+static int getShadeHash(RGB *rgb) {
+    return (rgb->red + rgb->green + rgb->blue) / 3;
 }
 
 char **getShadeMap(char *shadeBinPath) {
@@ -56,7 +56,7 @@ char **getShadeMap(char *shadeBinPath) {
     return shadeVals;
 }
 
-char getAscii(RGB rgb, char **shadeMap) {
+char getAscii(RGB *rgb, char **shadeMap) {
     int len;
     char *chars, c;
 
