@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OUT_PATH="logs/log-$(date +"%Y%m%d-%H%M%S")"
+OUT_PATH="logs/$(date +"%Y%m%d-%H%M%S")"
 
 OUT_DIR=$(dirname "$OUT_PATH")
 if [ ! -d "$OUT_DIR" ]; then
@@ -8,10 +8,10 @@ if [ ! -d "$OUT_DIR" ]; then
 fi
 
 EXEC=0
-while [ -f "$OUT_PATH-$EXEC.txt" ]; do
+while [ -f "$OUT_PATH-$EXEC.log" ]; do
     ((EXEC++))
 done
-OUT_PATH="$OUT_PATH-$EXEC.txt"
+OUT_PATH="$OUT_PATH-$EXEC.log"
 
 make > "$OUT_PATH"
 if [ $? -eq 0 ]; then

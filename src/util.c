@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 typedef struct RGB {
-    uint8_t red, green, blue;
+    int red, green, blue;
 } RGB;
 
 int htoi(char c) {
