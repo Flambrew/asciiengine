@@ -14,7 +14,7 @@ typedef struct Chunk {
     uint32_t crc;
 } Chunk;
 
-bool pngVerify(FILE *file) {
+static bool pngVerify(FILE *file) {
     uint8_t i, header[8] = {PNG_HEADER};
     for (i = 0; i < 8; ++i) {
         if (getc(file) != header[i]) {
@@ -24,7 +24,7 @@ bool pngVerify(FILE *file) {
     return true;
 }
 
-Chunk nextChunk(FILE *file) {
+static Chunk nextChunk(FILE *file) {
     Chunk out = {0, 0, 0, 0};
 
     uint8_t i;
@@ -49,7 +49,7 @@ Chunk nextChunk(FILE *file) {
     return out;
 }
 
-void freeChunk(Chunk c) {
+static void freeChunk(Chunk c) {
     free(c.data);
 }
 
