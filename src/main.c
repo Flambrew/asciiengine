@@ -17,7 +17,7 @@ int main() {
     getAscii(&rgb, shadeMap);
     freeStrArr(shadeMap, SHADERANGE);
 
-    read("test.png");
+    parsePng("test.png");
 
     printf("boing\n");
 }

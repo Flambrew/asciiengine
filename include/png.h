@@ -3,6 +3,6 @@
 #ifndef PNG_H
 #define PNG_H
 
-RGB *read(char *pngPath);
+RGB *parsePng(char *pngPath);
 
 #endif
