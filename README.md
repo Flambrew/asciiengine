@@ -1,4 +1,4 @@
-project status: <UNFINISHED>
+project status: \<UNFINISHED\>
 
 proper readme will be written at a later date
 
