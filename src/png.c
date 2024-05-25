@@ -21,16 +21,17 @@ static const uint8_t PNG_sPLT[4] = {0x73, 0x50, 0x4C, 0x54}, PNG_eXlf[4] = {0x65
 // --- error values --- //
 const uint8_t SUCCESS = 0;
 const uint8_t INVALID_PNG_HEADER = 1;
-const uint8_t IMPROPER_CHUNK_ORDERING = 2;
-const uint8_t CHUNK_DISALLOWED = 3;
-const uint8_t CHUNK_NONEXISTENT = 4;
+const uint8_t INVALID_DATASTREAM = 2;
+const uint8_t IMPROPER_CHUNK_ORDERING = 3;
+const uint8_t CHUNK_DISALLOWED = 4;
+const uint8_t CHUNK_NONEXISTENT = 5;
 
 typedef struct Chunk {
     uint32_t length;
     uint8_t type[4];
     uint8_t *data;
     uint32_t crc;
-    Chunk *next;
+    struct Chunk *next;
 } Chunk;
 
 static int pngVerify(FILE *file) {
@@ -43,8 +44,9 @@ static int pngVerify(FILE *file) {
     return 1;
 }
 
-static int isType(Chunk *chunk, uint8_t type[4]) {
+static int isType(Chunk *chunk, const uint8_t type[4]) {
     uint8_t i;
+    if (chunk == NULL) return 0;
     for (i = 0; i < 4; ++i) {
         if (chunk->type[i] != type[i]) {
             return 0;
@@ -57,7 +59,7 @@ static Chunk *nextChunk(FILE *file) {
     Chunk *out;
 
     uint8_t i;
-    for (i = 0; i < 4; ++i) {
+    for (i = out->length = 0; i < 4; ++i) {
         out->length <<= 8;
         out->length |= getc(file);
     }
@@ -71,8 +73,9 @@ static Chunk *nextChunk(FILE *file) {
         out->data[i] = getc(file);
     }
 
-    for (i = 0; i < 4; ++i) {
-        out->crc = getc(file);
+    for (i = out->crc = 0; i < 4; ++i) {
+        out->crc <<= 8;
+        out->crc |= getc(file);
     }
 
     if (!isType(out, PNG_IEND)) {
@@ -105,11 +108,11 @@ RGB *parsePng(char *path, int *error) {
     file = fopen(path, "r");
     if (!pngVerify(file)) return errOut(error, INVALID_PNG_HEADER, head, bitmap);
     head = curr = nextChunk(file);
+    if (head == NULL) return errOut(error, INVALID_DATASTREAM, head, bitmap);
     fclose(file);
 
     uint32_t width, height;
     uint8_t bitDepth, colorType, interlace; // TODO: implement interlace
-
     if (isType(curr, PNG_IHDR)) {
         width = ((curr->data[0] << 8 | curr->data[1]) << 8 | curr->data[2]) << 8 | curr->data[3];
         height = ((curr->data[4] << 8 | curr->data[5]) << 8 | curr->data[6]) << 8 | curr->data[7];
@@ -117,18 +120,18 @@ RGB *parsePng(char *path, int *error) {
         colorType = curr->data[9];
         interlace = curr->data[12];
     } else return errOut(error, IMPROPER_CHUNK_ORDERING, head, bitmap);
-
     bitmap = malloc(sizeof(RGB) * width * height);
+    curr = curr->next;
 
     uint8_t flagPLTE, flagIDAT;
-    flagPLTE = flagIDAT = 0;
-
-    for (curr = curr->next; isType(curr, PNG_IEND); curr = curr->next) {
+    for (flagPLTE = flagIDAT = 0; isType(curr, PNG_IEND); curr = curr->next) {
         if (isType(curr, PNG_PLTE)) {
             if (colorType == 0 || colorType == 4) return errOut(error, CHUNK_DISALLOWED, head, bitmap);
+            flagPLTE = 1;
 
-            
+
         } else if (isType(curr, PNG_IDAT)) {
+            flagIDAT = flagPLTE = 1;
 
         } else if (isType(curr, PNG_sBIT)) {
 
