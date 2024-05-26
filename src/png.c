@@ -126,7 +126,7 @@ static RGB *cleanup(int *error, int errorType, RGB *out) {
     if (palette != NULL) free(palette);
     if (sigBits != NULL) free(sigBits);
     *error = errorType;
-    return NULL;
+    return out;
 }
 
 RGB *parsePng(char *path, int *error) {
