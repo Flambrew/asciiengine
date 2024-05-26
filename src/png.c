@@ -16,32 +16,32 @@
 
 // --- header & chunk identification data --- //
 #define PNG_HEADER ((const uint8_t[8]) {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a})
-#define PNG_IHDR ((const uint8_t[4]){0x49, 0x48, 0x44, 0x52})
-#define PNG_PLTE ((const uint8_t[4]){0x50, 0x4C, 0x54, 0x45})
-#define PNG_IDAT ((const uint8_t[4]){0x49, 0x44, 0x41, 0x54})
-#define PNG_IEND ((const uint8_t[4]){0x49, 0x45, 0x4E, 0x44})
-#define PNG_sBIT ((const uint8_t[4]){0x73, 0x42, 0x49, 0x54})
-#define PNG_pHYs ((const uint8_t[4]){0x70, 0x48, 0x59, 0x73})
+#define PNG_IHDR ((const uint8_t[4]) {0x49, 0x48, 0x44, 0x52})
+#define PNG_PLTE ((const uint8_t[4]) {0x50, 0x4C, 0x54, 0x45})
+#define PNG_IDAT ((const uint8_t[4]) {0x49, 0x44, 0x41, 0x54})
+#define PNG_IEND ((const uint8_t[4]) {0x49, 0x45, 0x4E, 0x44})
+#define PNG_sBIT ((const uint8_t[4]) {0x73, 0x42, 0x49, 0x54})
 // #define PNG_acTL ((const uint8_t[4]){0x61, 0x63, 0x54, 0x4C}) // TODO impl
 // #define PNG_fcTL ((const uint8_t[4]){0x66, 0x63, 0x54, 0x4C}) // TODO impl
 // #define PNG_fdAT ((const uint8_t[4]){0x66, 0x64, 0x41, 0x54}) // TODO impl
 
 /* --- unimplemented chunks --- //
-#define PNG_tRNS ((const uint8_t[4]){0x74, 0x52, 0x4E, 0x53})
-#define PNG_cHRM ((const uint8_t[4]){0x63, 0x48, 0x52, 0x4D})
-#define PNG_gAMA ((const uint8_t[4]){0x67, 0x41, 0x4D, 0x41})
-#define PNG_iCCP ((const uint8_t[4]){0x69, 0x43, 0x43, 0x50})
-#define PNG_sRGB ((const uint8_t[4]){0x73, 0x52, 0x47, 0x42})
-#define PNG_cICP ((const uint8_t[4]){0x63, 0x49, 0x43, 0x50})
-#define PNG_mDCv ((const uint8_t[4]){0x6D, 0x44, 0x43, 0x76})
-#define PNG_iTXt ((const uint8_t[4]){0x69, 0x54, 0x58, 0x74})
-#define PNG_tEXt ((const uint8_t[4]){0x74, 0x45, 0x58, 0x74})
-#define PNG_zTXt ((const uint8_t[4]){0x7A, 0x54, 0x58, 0x74})
-#define PNG_bKGD ((const uint8_t[4]){0x62, 0x4B, 0x47, 0x44})
-#define PNG_hIST ((const uint8_t[4]){0x68, 0x49, 0x53, 0x54})
-#define PNG_sPLT ((const uint8_t[4]){0x73, 0x50, 0x4C, 0x54})
-#define PNG_eXlf ((const uint8_t[4]){0x65, 0x58, 0x6C, 0x66})
-#define PNG_tIME ((const uint8_t[4]){0x74, 0x49, 0x4D, 0x45})
+#define PNG_tRNS ((const uint8_t[4]) {0x74, 0x52, 0x4E, 0x53})
+#define PNG_cHRM ((const uint8_t[4]) {0x63, 0x48, 0x52, 0x4D})
+#define PNG_gAMA ((const uint8_t[4]) {0x67, 0x41, 0x4D, 0x41})
+#define PNG_iCCP ((const uint8_t[4]) {0x69, 0x43, 0x43, 0x50})
+#define PNG_sRGB ((const uint8_t[4]) {0x73, 0x52, 0x47, 0x42})
+#define PNG_cICP ((const uint8_t[4]) {0x63, 0x49, 0x43, 0x50})
+#define PNG_mDCv ((const uint8_t[4]) {0x6D, 0x44, 0x43, 0x76})
+#define PNG_iTXt ((const uint8_t[4]) {0x69, 0x54, 0x58, 0x74})
+#define PNG_tEXt ((const uint8_t[4]) {0x74, 0x45, 0x58, 0x74})
+#define PNG_zTXt ((const uint8_t[4]) {0x7A, 0x54, 0x58, 0x74})
+#define PNG_bKGD ((const uint8_t[4]) {0x62, 0x4B, 0x47, 0x44})
+#define PNG_hIST ((const uint8_t[4]) {0x68, 0x49, 0x53, 0x54})
+#define PNG_pHYs ((const uint8_t[4]) {0x70, 0x48, 0x59, 0x73})
+#define PNG_sPLT ((const uint8_t[4]) {0x73, 0x50, 0x4C, 0x54})
+#define PNG_eXlf ((const uint8_t[4]) {0x65, 0x58, 0x6C, 0x66})
+#define PNG_tIME ((const uint8_t[4]) {0x74, 0x49, 0x4D, 0x45})
 // --- unimplemented chunks --- */
 
 typedef struct Chunk {
@@ -165,9 +165,7 @@ RGB *parsePng(char *path, int *error) {
             if (colorType == 0 || colorType == 4 || !flagPLTE) return cleanup(error, DISALLOWED_CHUNK, NULL);
             flagIDAT = 1;
 
-
-
-
+            //TODO IMPLEMENT
 
         } else if (isType(curr, PNG_sBIT)) {
             if (flagPLTE || flagIDAT) return cleanup(error, MISORDERED_CHUNK, NULL);
@@ -176,12 +174,6 @@ RGB *parsePng(char *path, int *error) {
             for(i = 0; i < curr->length; ++i) {
                 sigBits[i] = curr->data[i];
             }
-        } else if (isType(curr, PNG_pHYs)) {
-
-
-
-
-
         } else return cleanup(error, UNIMPLEMENTED_CHUNK, NULL);
 
         /* --- animation implementation --- //
