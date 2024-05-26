@@ -13,10 +13,14 @@ while [ -f "$OUT_PATH-$EXEC.log" ]; do
 done
 OUT_PATH="$OUT_PATH-$EXEC.log"
 
-make > "$OUT_PATH"
+make >> "$OUT_PATH" 2>&1
 if [ $? -eq 0 ]; then
-    ./out
-    make clean > "$OUT_PATH"
+    if [ "$1" = "gdb" ]; then
+        gdb ./out | tee -a "$OUT_PATH"
+    else
+        ./out | tee -a "$OUT_PATH"
+    fi
+    make clean >> "$OUT_PATH" 2>&1
 else
-    echo "Compilation failed."
+    echo "Compilation failed." | tee -a "$OUT_PATH"
 fi

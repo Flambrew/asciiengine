@@ -17,9 +17,10 @@ int main() {
     getAscii(&rgb, shadeMap);
     freeStrArr(shadeMap, SHADERANGE);
 
-    parsePng("test.png");
+    int error;
+    parsePng("test.png", &error);
 
-    printf("boing\n");
+    printf("finished with error code: %d\n", error);
 }
 
 /*int main() { // prints a gradient with 0.0625% noise
@@ -35,7 +36,7 @@ int main() {
         rgb.red = n;
         rgb.green = n;
         rgb.blue = n;
-        printf("%c", getAscii(rgb, shadeMap));
+        printf("%c", getAscii(&rgb, shadeMap));
         if ((i + 1) % (SHADERANGE / 4) == 0) {
             printf("\n");
         }
