@@ -55,22 +55,18 @@ typedef struct Chunk {
 static int pngVerify(FILE *file) {
     uint8_t i;
     if (file == NULL) return 0;
-    for (i = 0; i < 8; ++i) {
-        if (getc(file) != PNG_HEADER[i]) {
+    for (i = 0; i < 8; ++i) 
+        if (getc(file) != PNG_HEADER[i]) 
             return 0;
-        }
-    }
     return 1;
 }
 
 static int isType(Chunk *chunk, const uint8_t type[4]) {
     uint8_t i;
     if (chunk == NULL) return 0;
-    for (i = 0; i < 4; ++i) {
-        if (chunk->type[i] != type[i]) {
+    for (i = 0; i < 4; ++i) 
+        if (chunk->type[i] != type[i])
             return 0;
-        }
-    }
     return 1;
 }
 
@@ -169,14 +165,15 @@ RGB *parsePng(char *path, int *error) {
             uint8_t zlibFlags, adtlFlags, *dataBlocks, checkVal[4];
             zlibFlags = curr->data[0];
             adtlFlags = curr->data[1];
+
             dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
             for (j = 0, i = 2; i < curr->length - 4; ++j, ++i) {
                 dataBlocks[j] = curr->data[i];
             }
+            
             for (j = 0; i < curr->length; ++j, ++i) {
                 checkVal[j] = curr->data[i];
             }
-
 
 
             //TODO IMPLEMENT
