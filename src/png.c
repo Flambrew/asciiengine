@@ -148,7 +148,7 @@ RGB *parsePng(char *path, int *error) {
     bitmap = malloc(sizeof(RGB) * width * height);
     curr = curr->next;
 
-    uint8_t i, flagPLTE, flagIDAT;
+    uint8_t i, j, flagPLTE, flagIDAT;
     for (flagPLTE = flagIDAT = 0; isType(curr, PNG_IEND); curr = curr->next) {
         if (isType(curr, PNG_PLTE)) {
             if (colorType == 0 || colorType == 4) return cleanup(error, DISALLOWED_CHUNK, NULL);
@@ -163,7 +163,21 @@ RGB *parsePng(char *path, int *error) {
             }
         } else if (isType(curr, PNG_IDAT)) {
             if (colorType == 0 || colorType == 4 || !flagPLTE) return cleanup(error, DISALLOWED_CHUNK, NULL);
+            if (curr->length < 6) return cleanup(error, INVALID_CHUNK_DATA, NULL);
             flagIDAT = 1;
+
+            uint8_t zlibFlags, adtlFlags, *dataBlocks, checkVal[4];
+            zlibFlags = curr->data[0];
+            adtlFlags = curr->data[1];
+            dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
+            for (j = 0, i = 2; i < curr->length - 4; ++j, ++i) {
+                dataBlocks[j] = curr->data[i];
+            }
+            for (j = 0; i < curr->length; ++j, ++i) {
+                checkVal[j] = curr->data[i];
+            }
+
+
 
             //TODO IMPLEMENT
 
