@@ -54,21 +54,11 @@ typedef struct Chunk {
 } Chunk;
 
 static int pngVerify(FILE *file) {
-    uint8_t i;
-
-    printf("x\n");
-    printf("%d\n", file);
-    
-    if (file == NULL) return 0;
-
-    printf("y\n");
-
-    for (i = 0; i < 8; ++i) {
-        char c = getc(file);
-        printf("%c\n", c);
-        if (getc(file) != PNG_HEADER[i]) 
+    uint8_t i, header[8];
+    if (file == NULL || fread(header, 1, 8, file) != 8) return 0;
+    for (i = 0; i < 8; ++i) 
+        if (header[i] != PNG_HEADER[i]) 
             return 0;
-    }
     return 1;
 }
 
@@ -137,11 +127,8 @@ static RGB *cleanup(int *error, int errorType, RGB *out) {
 }
 
 RGB *parsePng(char *path, int *error) {
-
-    printf("0\n");
-    
     Chunk *curr;
-    file = fopen(path, "r");
+    file = fopen(path, "rb");
     if (!pngVerify(file)) return cleanup(error, INVALID_PNG_HEADER, NULL);
 
     printf("1\n");
