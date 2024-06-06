@@ -15,7 +15,6 @@
 #define MISORDERED_CHUNK 8
 #define UNIMPLEMENTED_CHUNK 9
 
-// --- header & chunk identification data --- //
 #define PNG_HEADER ((const uint8_t[8]) {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a})
 #define PNG_IHDR ((const uint8_t[4]) {0x49, 0x48, 0x44, 0x52})
 #define PNG_PLTE ((const uint8_t[4]) {0x50, 0x4C, 0x54, 0x45})
@@ -26,24 +25,14 @@
 // #define PNG_fcTL ((const uint8_t[4]){0x66, 0x63, 0x54, 0x4C}) // TODO impl
 // #define PNG_fdAT ((const uint8_t[4]){0x66, 0x64, 0x41, 0x54}) // TODO impl
 
-/* --- unimplemented chunks --- //
-#define PNG_tRNS ((const uint8_t[4]) {0x74, 0x52, 0x4E, 0x53})
-#define PNG_cHRM ((const uint8_t[4]) {0x63, 0x48, 0x52, 0x4D})
-#define PNG_gAMA ((const uint8_t[4]) {0x67, 0x41, 0x4D, 0x41})
-#define PNG_iCCP ((const uint8_t[4]) {0x69, 0x43, 0x43, 0x50})
-#define PNG_sRGB ((const uint8_t[4]) {0x73, 0x52, 0x47, 0x42})
-#define PNG_cICP ((const uint8_t[4]) {0x63, 0x49, 0x43, 0x50})
-#define PNG_mDCv ((const uint8_t[4]) {0x6D, 0x44, 0x43, 0x76})
-#define PNG_iTXt ((const uint8_t[4]) {0x69, 0x54, 0x58, 0x74})
-#define PNG_tEXt ((const uint8_t[4]) {0x74, 0x45, 0x58, 0x74})
-#define PNG_zTXt ((const uint8_t[4]) {0x7A, 0x54, 0x58, 0x74})
-#define PNG_bKGD ((const uint8_t[4]) {0x62, 0x4B, 0x47, 0x44})
-#define PNG_hIST ((const uint8_t[4]) {0x68, 0x49, 0x53, 0x54})
-#define PNG_pHYs ((const uint8_t[4]) {0x70, 0x48, 0x59, 0x73})
-#define PNG_sPLT ((const uint8_t[4]) {0x73, 0x50, 0x4C, 0x54})
-#define PNG_eXlf ((const uint8_t[4]) {0x65, 0x58, 0x6C, 0x66})
-#define PNG_tIME ((const uint8_t[4]) {0x74, 0x49, 0x4D, 0x45})
-// --- unimplemented chunks --- */
+static int pngVerify(FILE *file) {
+    uint8_t i, header[8];
+    if (file == NULL || fread(header, 1, 8, file) != 8) return 0;
+    for (i = 0; i < 8; ++i) 
+        if (header[i] != PNG_HEADER[i]) 
+            return 0;
+    return 1;
+}
 
 typedef struct Chunk {
     uint32_t length;
@@ -53,13 +42,10 @@ typedef struct Chunk {
     struct Chunk *next;
 } Chunk;
 
-static int pngVerify(FILE *file) {
-    uint8_t i, header[8];
-    if (file == NULL || fread(header, 1, 8, file) != 8) return 0;
-    for (i = 0; i < 8; ++i) 
-        if (header[i] != PNG_HEADER[i]) 
-            return 0;
-    return 1;
+static void freeChunk(Chunk *c) {
+    if (c == NULL) return;
+    free(c->data);
+    freeChunk(c->next);
 }
 
 static int isType(Chunk *chunk, const uint8_t type[4]) {
@@ -76,24 +62,22 @@ static Chunk *chunkList(FILE *file) {
 
     Chunk *out = malloc(sizeof(Chunk));
 
-    uint8_t i;
+    uint8_t i, byte[1];
     for (i = out->length = 0; i < 4; ++i) {
         out->length <<= 8;
-        out->length |= getc(file);
+        if (fread(byte, sizeof(uint8_t), 1, file) != 1) return NULL;
+        out->length |= *byte;
     }
 
-    for (i = 0; i < 4; ++i) {
-        out->type[i] = getc(file);
-    }
+    if (fread(out->type, sizeof(uint8_t), 4, file) != 4) return NULL;
 
     out->data = malloc(sizeof(uint8_t) * out->length);
-    for (i = 0; i < out->length; ++i) {
-        out->data[i] = getc(file);
-    }
+    if (fread(out->data, sizeof(uint8_t), out->length, file) != out->length) return NULL;
 
     for (i = out->crc = 0; i < 4; ++i) {
         out->crc <<= 8;
-        out->crc |= getc(file);
+        if (fread(byte, sizeof(uint8_t), 1, file) != 1) return NULL;
+        out->crc |= *byte;
     }
 
     if (!isType(out, PNG_IEND)) {
@@ -105,38 +89,19 @@ static Chunk *chunkList(FILE *file) {
     return out;
 }
 
-static void freeChunk(Chunk *c) {
-    if (c == NULL) return;
-    free(c->data);
-    freeChunk(c->next);
-}
-
 static FILE *file;
 static Chunk *head;
 static RGB *bitmap, *palette;
 static uint8_t *sigBits;
-
-static RGB *cleanup(int *error, int errorType, RGB *out) {
-    if (file != NULL) fclose(file);
-    if (head != NULL) freeChunk(head);
-    if (bitmap != NULL && errorType) free(bitmap);
-    if (palette != NULL) free(palette);
-    if (sigBits != NULL) free(sigBits);
-    *error = errorType;
-    return out;
-}
+static RGB *cleanup(int *error, int errorType, RGB *out);
 
 RGB *parsePng(char *path, int *error) {
     Chunk *curr;
+
     file = fopen(path, "rb");
     if (!pngVerify(file)) return cleanup(error, INVALID_PNG_HEADER, NULL);
-
-    printf("1\n");
-
     head = curr = chunkList(file);
     if (head == NULL) return cleanup(error, INVALID_DATASTREAM, NULL);
-
-    printf("2\n");
 
     uint32_t width, height;
     uint8_t bitDepth, colorType, interlace; // TODO: implement interlace
@@ -150,7 +115,10 @@ RGB *parsePng(char *path, int *error) {
     bitmap = malloc(sizeof(RGB) * width * height);
     curr = curr->next;
 
-    printf("3\n");
+    printf("\nIHDR_DATA:\n");
+    printf("width: %d, height: %d\n", width, height);
+    printf("bit depth: %u, color type: %u, interlace method: %u\n", bitDepth, colorType, interlace);
+    printf("IHDR_PARSE_COMPLETE.\n\n");
 
     uint8_t i, j, flagPLTE, flagIDAT;
     for (flagPLTE = flagIDAT = 0; isType(curr, PNG_IEND); curr = curr->next) {
@@ -220,3 +188,12 @@ RGB *parsePng(char *path, int *error) {
     return cleanup(error, SUCCESS, bitmap);
 }
 
+static RGB *cleanup(int *error, int errorType, RGB *out) {
+    if (file != NULL) fclose(file);
+    if (head != NULL) freeChunk(head);
+    if (bitmap != NULL && errorType) free(bitmap);
+    if (palette != NULL) free(palette);
+    if (sigBits != NULL) free(sigBits);
+    *error = errorType;
+    return out;
+}
