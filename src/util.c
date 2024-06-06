@@ -23,3 +23,8 @@ void freeStrArr(char **arr, int len) {
     }
     free(arr);
 }
+
+int pow2(int x, int n) {
+    if (n == 1) return x;
+    return x * pow2(x, n - 1);
+}

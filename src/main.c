@@ -18,7 +18,7 @@ int main() {
     freeStrArr(shadeMap, SHADERANGE);
 
     int error;
-    parsePng("test.png", &error);
+    parsePng("asset\\test.png", &error);
 
     printf("finished with error code: %d\n", error);
 }

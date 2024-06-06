@@ -9,10 +9,11 @@
 #define INVALID_DATASTREAM 2
 #define MISSING_HEADER_CHUNK 3
 #define DISALLOWED_CHUNK 4
-#define INVALID_CHUNK_DATA 5
-#define MISSING_CHUNK 6
-#define MISORDERED_CHUNK 7
-#define UNIMPLEMENTED_CHUNK 8
+#define MALFORMED_CHUNK_DATA 5
+#define INVALID_CHUNK_DATA 6
+#define MISSING_CHUNK 7
+#define MISORDERED_CHUNK 8
+#define UNIMPLEMENTED_CHUNK 9
 
 // --- header & chunk identification data --- //
 #define PNG_HEADER ((const uint8_t[8]) {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a})
@@ -54,10 +55,20 @@ typedef struct Chunk {
 
 static int pngVerify(FILE *file) {
     uint8_t i;
+
+    printf("x\n");
+    printf("%d\n", file);
+    
     if (file == NULL) return 0;
-    for (i = 0; i < 8; ++i) 
+
+    printf("y\n");
+
+    for (i = 0; i < 8; ++i) {
+        char c = getc(file);
+        printf("%c\n", c);
         if (getc(file) != PNG_HEADER[i]) 
             return 0;
+    }
     return 1;
 }
 
@@ -126,11 +137,19 @@ static RGB *cleanup(int *error, int errorType, RGB *out) {
 }
 
 RGB *parsePng(char *path, int *error) {
+
+    printf("0\n");
+    
     Chunk *curr;
     file = fopen(path, "r");
     if (!pngVerify(file)) return cleanup(error, INVALID_PNG_HEADER, NULL);
+
+    printf("1\n");
+
     head = curr = chunkList(file);
     if (head == NULL) return cleanup(error, INVALID_DATASTREAM, NULL);
+
+    printf("2\n");
 
     uint32_t width, height;
     uint8_t bitDepth, colorType, interlace; // TODO: implement interlace
@@ -144,11 +163,16 @@ RGB *parsePng(char *path, int *error) {
     bitmap = malloc(sizeof(RGB) * width * height);
     curr = curr->next;
 
+    printf("3\n");
+
     uint8_t i, j, flagPLTE, flagIDAT;
     for (flagPLTE = flagIDAT = 0; isType(curr, PNG_IEND); curr = curr->next) {
+
+        printf("type: %c%c%c%c\n", curr->type[0], curr->type[1], curr->type[2], curr->type[3]);
+
         if (isType(curr, PNG_PLTE)) {
             if (colorType == 0 || colorType == 4) return cleanup(error, DISALLOWED_CHUNK, NULL);
-            if (curr->length % 3 != 0) return cleanup(error, INVALID_CHUNK_DATA, NULL);
+            if (curr->length % 3 != 0) return cleanup(error, MALFORMED_CHUNK_DATA, NULL);
             flagPLTE = 1;
 
             palette = malloc(sizeof(RGB) * curr->length / 3);
@@ -159,21 +183,33 @@ RGB *parsePng(char *path, int *error) {
             }
         } else if (isType(curr, PNG_IDAT)) {
             if (colorType == 0 || colorType == 4 || !flagPLTE) return cleanup(error, DISALLOWED_CHUNK, NULL);
-            if (curr->length < 6) return cleanup(error, INVALID_CHUNK_DATA, NULL);
+            if (curr->length < 6) return cleanup(error, MALFORMED_CHUNK_DATA, NULL);
             flagIDAT = 1;
 
-            uint8_t zlibFlags, adtlFlags, *dataBlocks, checkVal[4];
-            zlibFlags = curr->data[0];
-            adtlFlags = curr->data[1];
+            uint16_t infoChecksum;
+            infoChecksum = curr->data[0] * 0xFF + curr->data[1];
+            if (infoChecksum % 31 != 0) return cleanup(error, INVALID_CHUNK_DATA, NULL);
+
+            uint8_t cmethod, cinfo, fdict, flevel, *dataBlocks, checksum[4];
+            cmethod = curr->data[0] & 0b00001111;
+            cinfo = (curr->data[0] & 0b11110000) >> 4;
+            fdict = (curr->data[1] & 0b00100000) >> 5;
+            flevel = (curr->data[1] & 0b11000000) >> 6;
+            if (cmethod != 8 || cinfo > 7) return cleanup(error, INVALID_CHUNK_DATA, NULL);
+
+            uint32_t windowSize;
+            windowSize = pow2(2, cinfo + 8);
 
             dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
             for (j = 0, i = 2; i < curr->length - 4; ++j, ++i) {
                 dataBlocks[j] = curr->data[i];
             }
-            
+
             for (j = 0; i < curr->length; ++j, ++i) {
-                checkVal[j] = curr->data[i];
+                checksum[j] = curr->data[i];
             }
+
+
 
 
             //TODO IMPLEMENT
