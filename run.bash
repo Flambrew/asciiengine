@@ -22,5 +22,5 @@ if [ $? -eq 0 ]; then
     fi
     make clean >> "$OUT_PATH" 2>&1
 else
-    echo "Compilation failed." | tee -a "$OUT_PATH"
+    echo "compilation failed." | tee -a "$OUT_PATH"
 fi

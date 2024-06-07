@@ -120,8 +120,11 @@ RGB *parsePng(char *path, int *error) {
     printf("bit depth: %u, color type: %u, interlace method: %u\n", bitDepth, colorType, interlace);
     printf("IHDR_PARSE_COMPLETE.\n\n");
 
+    printf("currNext | type: %c%c%c%c\n", curr->type[0], curr->type[1], curr->type[2], curr->type[3]);
+
     uint8_t i, j, flagPLTE, flagIDAT;
     for (flagPLTE = flagIDAT = 0; isType(curr, PNG_IEND); curr = curr->next) {
+        printf("for execution");
 
         printf("type: %c%c%c%c\n", curr->type[0], curr->type[1], curr->type[2], curr->type[3]);
 
