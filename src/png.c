@@ -13,7 +13,7 @@
 #define INVALID_CHUNK_DATA 6
 #define MISSING_CHUNK 7
 #define MISORDERED_CHUNK 8
-#define UNIMPLEMENTED_CHUNK 9
+#define UNIMPLEMENTED_CRITICAL_CHUNK 9
 
 #define PNG_HEADER ((const uint8_t[8]) {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a})
 #define PNG_IHDR ((const uint8_t[4]) {0x49, 0x48, 0x44, 0x52})
@@ -115,18 +115,11 @@ RGB *parsePng(char *path, int *error) {
     bitmap = malloc(sizeof(RGB) * width * height);
     curr = curr->next;
 
-    printf("\nIHDR_DATA:\n");
-    printf("width: %d, height: %d\n", width, height);
-    printf("bit depth: %u, color type: %u, interlace method: %u\n", bitDepth, colorType, interlace);
-    printf("IHDR_PARSE_COMPLETE.\n\n");
-
-    printf("currNext | type: %c%c%c%c\n", curr->type[0], curr->type[1], curr->type[2], curr->type[3]);
+    printf("\nIHDR_DATA | width: %d, height: %d, bit depth: %u, color type: %u, interlace method: %u\n\n", width, height, bitDepth, colorType, interlace);
 
     uint8_t i, j, flagPLTE, flagIDAT;
-    for (flagPLTE = flagIDAT = 0; isType(curr, PNG_IEND); curr = curr->next) {
-        printf("for execution");
-
-        printf("type: %c%c%c%c\n", curr->type[0], curr->type[1], curr->type[2], curr->type[3]);
+    for (flagPLTE = flagIDAT = 0; !isType(curr, PNG_IEND); curr = curr->next) {
+        printf("type: %.4s\n", curr->type);
 
         if (isType(curr, PNG_PLTE)) {
             if (colorType == 0 || colorType == 4) return cleanup(error, DISALLOWED_CHUNK, NULL);
@@ -139,6 +132,7 @@ RGB *parsePng(char *path, int *error) {
                 palette[i / 3].green = curr->data[i + 1];
                 palette[i / 3].blue = curr->data[i + 2];
             }
+
         } else if (isType(curr, PNG_IDAT)) {
             if (colorType == 0 || colorType == 4 || !flagPLTE) return cleanup(error, DISALLOWED_CHUNK, NULL);
             if (curr->length < 6) return cleanup(error, MALFORMED_CHUNK_DATA, NULL);
@@ -179,7 +173,14 @@ RGB *parsePng(char *path, int *error) {
             for(i = 0; i < curr->length; ++i) {
                 sigBits[i] = curr->data[i];
             }
-        } else return cleanup(error, UNIMPLEMENTED_CHUNK, NULL);
+
+            printf("\nPLTE_DATA:");
+            printf("unimplemented printout\n");
+            printf("PLTE_PARSE_COMPLETE.\n\n");
+
+        } else if ((curr->type[0] & 0b00100000) == 0) { 
+            return cleanup(error, UNIMPLEMENTED_CRITICAL_CHUNK, NULL);
+        } else printf("unimplemented chunk: %.4s\n", curr->type);
 
         /* --- animation implementation --- //
         } else if (isType(curr, PNG_acTL)) {
