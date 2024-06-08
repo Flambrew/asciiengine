@@ -15,11 +15,13 @@ OUT_PATH="$OUT_PATH-$EXEC.log"
 
 make >> "$OUT_PATH" 2>&1
 if [ $? -eq 0 ]; then
+    echo "//----====<OUTPUT>====----\\\\" >> "$OUT_PATH"
     if [ "$1" = "gdb" ]; then
         gdb ./out | tee -a "$OUT_PATH"
     else
         ./out | tee -a "$OUT_PATH"
     fi
+    echo "\\\\----====<OUTPUT>====----//" >> "$OUT_PATH"
     make clean >> "$OUT_PATH" 2>&1
 else
     echo "compilation failed." | tee -a "$OUT_PATH"

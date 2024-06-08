@@ -92,7 +92,7 @@ static Chunk *chunkList(FILE *file) {
 static FILE *file;
 static Chunk *head;
 static RGB *bitmap, *palette;
-static uint8_t *sigBits;
+static uint8_t *sigBits, *bytestreamIDAT;
 static RGB *cleanup(int *error, int errorType, RGB *out);
 
 RGB *parsePng(char *path, int *error) {
@@ -115,12 +115,11 @@ RGB *parsePng(char *path, int *error) {
     bitmap = malloc(sizeof(RGB) * width * height);
     curr = curr->next;
 
-    printf("\nIHDR_DATA | width: %d, height: %d, bit depth: %u, color type: %u, interlace method: %u\n\n", width, height, bitDepth, colorType, interlace);
+    // printf("\nIHDR_DATA | width: %d, height: %d, bit depth: %u, color type: %u, interlace method: %u\n\n", width, height, bitDepth, colorType, interlace);
 
+    uint32_t bytestreamIDATLen;
     uint8_t i, j, flagPLTE, flagIDAT;
-    for (flagPLTE = flagIDAT = 0; !isType(curr, PNG_IEND); curr = curr->next) {
-        printf("type: %.4s\n", curr->type);
-
+    for (bytestreamIDATLen = flagPLTE = flagIDAT = 0; !isType(curr, PNG_IEND); curr = curr->next) {
         if (isType(curr, PNG_PLTE)) {
             if (colorType == 0 || colorType == 4) return cleanup(error, DISALLOWED_CHUNK, NULL);
             if (curr->length % 3 != 0) return cleanup(error, MALFORMED_CHUNK_DATA, NULL);
@@ -132,40 +131,16 @@ RGB *parsePng(char *path, int *error) {
                 palette[i / 3].green = curr->data[i + 1];
                 palette[i / 3].blue = curr->data[i + 2];
             }
-
         } else if (isType(curr, PNG_IDAT)) {
-            if (colorType == 0 || colorType == 4 || !flagPLTE) return cleanup(error, DISALLOWED_CHUNK, NULL);
+            if ((colorType == 3 && !flagPLTE) || ((colorType == 0 || colorType == 4) && flagPLTE)) return cleanup(error, DISALLOWED_CHUNK, NULL);
             if (curr->length < 6) return cleanup(error, MALFORMED_CHUNK_DATA, NULL);
             flagIDAT = 1;
 
-            uint16_t infoChecksum;
-            infoChecksum = curr->data[0] * 0xFF + curr->data[1];
-            if (infoChecksum % 31 != 0) return cleanup(error, INVALID_CHUNK_DATA, NULL);
-
-            uint8_t cmethod, cinfo, fdict, flevel, *dataBlocks, checksum[4];
-            cmethod = curr->data[0] & 0b00001111;
-            cinfo = (curr->data[0] & 0b11110000) >> 4;
-            fdict = (curr->data[1] & 0b00100000) >> 5;
-            flevel = (curr->data[1] & 0b11000000) >> 6;
-            if (cmethod != 8 || cinfo > 7) return cleanup(error, INVALID_CHUNK_DATA, NULL);
-
-            uint32_t windowSize;
-            windowSize = pow2(2, cinfo + 8);
-
-            dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
-            for (j = 0, i = 2; i < curr->length - 4; ++j, ++i) {
-                dataBlocks[j] = curr->data[i];
+            j = bytestreamIDATLen;
+            bytestreamIDAT = realloc(bytestreamIDAT, bytestreamIDATLen += curr->length);
+            for (i = 0; i < curr->length; ++i) { 
+                bytestreamIDAT[j + i] = curr->data[i];
             }
-
-            for (j = 0; i < curr->length; ++j, ++i) {
-                checksum[j] = curr->data[i];
-            }
-
-
-
-
-            //TODO IMPLEMENT
-
         } else if (isType(curr, PNG_sBIT)) {
             if (flagPLTE || flagIDAT) return cleanup(error, MISORDERED_CHUNK, NULL);
 
@@ -173,11 +148,6 @@ RGB *parsePng(char *path, int *error) {
             for(i = 0; i < curr->length; ++i) {
                 sigBits[i] = curr->data[i];
             }
-
-            printf("\nPLTE_DATA:");
-            printf("unimplemented printout\n");
-            printf("PLTE_PARSE_COMPLETE.\n\n");
-
         } else if ((curr->type[0] & 0b00100000) == 0) { 
             return cleanup(error, UNIMPLEMENTED_CRITICAL_CHUNK, NULL);
         } else printf("unimplemented chunk: %.4s\n", curr->type);
@@ -189,6 +159,43 @@ RGB *parsePng(char *path, int *error) {
         // --- animation implementation --- */
     }
 
+    printf("idat size: %d\n", bytestreamIDATLen);
+    for (i = 0; i < bytestreamIDATLen; ++i)
+        printf("%.2X ", bytestreamIDAT[i]);
+    printf("\n");
+
+
+    /*
+     uint16_t infoChecksum;
+     infoChecksum = curr->data[0] * 0xFF + curr->data[1];
+     if (infoChecksum % 31 != 0) return cleanup(error, INVALID_CHUNK_DATA, NULL);
+
+     uint8_t cmethod, cinfo, fdict, flevel, *dataBlocks, checksum[4];
+     cmethod = curr->data[0] & 0b00001111;
+     cinfo = (curr->data[0] & 0b11110000) >> 4;
+     fdict = (curr->data[1] & 0b00100000) >> 5;
+     flevel = (curr->data[1] & 0b11000000) >> 6;
+     if (cmethod != 8 || cinfo > 7) return cleanup(error, INVALID_CHUNK_DATA, NULL);
+
+     uint32_t windowSize;
+     windowSize = pow2(2, cinfo + 8);
+
+     dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
+     for (j = 0, i = 2; i < curr->length - 4; ++j, ++i) {
+         dataBlocks[j] = curr->data[i];
+     }
+
+     for (j = 0; i < curr->length; ++j, ++i) {
+         checksum[j] = curr->data[i];
+     }
+
+     //TODO IMPLEMENT
+     */
+
+
+
+
+
     return cleanup(error, SUCCESS, bitmap);
 }
 
@@ -198,6 +205,7 @@ static RGB *cleanup(int *error, int errorType, RGB *out) {
     if (bitmap != NULL && errorType) free(bitmap);
     if (palette != NULL) free(palette);
     if (sigBits != NULL) free(sigBits);
+    if (bytestreamIDAT != NULL) free(bytestreamIDAT);
     *error = errorType;
     return out;
 }
