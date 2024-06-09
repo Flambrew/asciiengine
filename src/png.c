@@ -10,26 +10,26 @@
 #define MISSING_HEADER_CHUNK 3
 #define DISALLOWED_CHUNK 4
 #define MALFORMED_CHUNK_DATA 5
-#define INVALID_CHUNK_DATA 6
+#define INVALID_ZLIB_DATA 6
 #define MISSING_CHUNK 7
 #define MISORDERED_CHUNK 8
 #define UNIMPLEMENTED_CRITICAL_CHUNK 9
 
-#define PNG_HEADER ((const uint8_t[8]) {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a})
+#define PNG_HEAD ((const uint8_t[8]) {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a})
 #define PNG_IHDR ((const uint8_t[4]) {0x49, 0x48, 0x44, 0x52})
 #define PNG_PLTE ((const uint8_t[4]) {0x50, 0x4C, 0x54, 0x45})
 #define PNG_IDAT ((const uint8_t[4]) {0x49, 0x44, 0x41, 0x54})
 #define PNG_IEND ((const uint8_t[4]) {0x49, 0x45, 0x4E, 0x44})
 #define PNG_sBIT ((const uint8_t[4]) {0x73, 0x42, 0x49, 0x54})
-// #define PNG_acTL ((const uint8_t[4]){0x61, 0x63, 0x54, 0x4C}) // TODO impl
-// #define PNG_fcTL ((const uint8_t[4]){0x66, 0x63, 0x54, 0x4C}) // TODO impl
-// #define PNG_fdAT ((const uint8_t[4]){0x66, 0x64, 0x41, 0x54}) // TODO impl
+#define PNG_acTL ((const uint8_t[4]) {0x61, 0x63, 0x54, 0x4C})
+#define PNG_fcTL ((const uint8_t[4]) {0x66, 0x63, 0x54, 0x4C})
+#define PNG_fdAT ((const uint8_t[4]) {0x66, 0x64, 0x41, 0x54})
 
 static int pngVerify(FILE *file) {
     uint8_t i, header[8];
     if (file == NULL || fread(header, 1, 8, file) != 8) return 0;
     for (i = 0; i < 8; ++i) 
-        if (header[i] != PNG_HEADER[i]) 
+        if (header[i] != PNG_HEAD[i]) 
             return 0;
     return 1;
 }
@@ -89,6 +89,26 @@ static Chunk *chunkList(FILE *file) {
     return out;
 }
 
+uint32_t *huffmanTree(uint8_t *lengths, uint32_t len) {
+    uint8_t maxlen;
+    uint32_t i, *bitLenCount, code, *nextCode, *out;
+    for (i = 0; i < len; ++i) {
+        if (maxlen < lengths[i]) {
+            maxlen = lengths[i];
+        }
+    }
+
+    malloc(bitLenCount, (sizeof(uint32_t) + 1) * maxlen);
+    malloc(nextCode, (sizeof(uint32_t) + 1) * maxlen);
+    for (i = 1; i <= maxlen; ++i) {
+        bitLenCount[lengths[i]]++;
+    }
+
+    for(i = code = bitLenCount[0] = 0; i < maxlen; ++i) {
+        nextCode[i] = code = (code + bitLenCount[i - 1]) << 1;
+    }
+}
+
 static FILE *file;
 static Chunk *head;
 static RGB *bitmap, *palette;
@@ -104,7 +124,7 @@ RGB *parsePng(char *path, int *error) {
     if (head == NULL) return cleanup(error, INVALID_DATASTREAM, NULL);
 
     uint32_t width, height;
-    uint8_t bitDepth, colorType, interlace; // TODO: implement interlace
+    uint8_t bitDepth, colorType, interlace;
     if (isType(curr, PNG_IHDR)) {
         width = ((curr->data[0] << 8 | curr->data[1]) << 8 | curr->data[2]) << 8 | curr->data[3];
         height = ((curr->data[4] << 8 | curr->data[5]) << 8 | curr->data[6]) << 8 | curr->data[7];
@@ -114,8 +134,6 @@ RGB *parsePng(char *path, int *error) {
     } else return cleanup(error, MISSING_HEADER_CHUNK, NULL);
     bitmap = malloc(sizeof(RGB) * width * height);
     curr = curr->next;
-
-    // printf("\nIHDR_DATA | width: %d, height: %d, bit depth: %u, color type: %u, interlace method: %u\n\n", width, height, bitDepth, colorType, interlace);
 
     uint32_t bytestreamIDATLen;
     uint8_t i, j, flagPLTE, flagIDAT;
@@ -148,14 +166,14 @@ RGB *parsePng(char *path, int *error) {
             for(i = 0; i < curr->length; ++i) {
                 sigBits[i] = curr->data[i];
             }
+        } else if (isType(curr, PNG_acTL)) { printf("unimplemented chunk (TODO): %.4s\n", curr->type);
+        } else if (isType(curr, PNG_fcTL)) { printf("unimplemented chunk (TODO): %.4s\n", curr->type);
+        } else if (isType(curr, PNG_fdAT)) { printf("unimplemented chunk (TODO): %.4s\n", curr->type);
         } else if ((curr->type[0] & 0b00100000) == 0) { 
             return cleanup(error, UNIMPLEMENTED_CRITICAL_CHUNK, NULL);
         } else printf("unimplemented chunk: %.4s\n", curr->type);
 
         /* --- animation implementation --- //
-        } else if (isType(curr, PNG_acTL)) {
-        } else if (isType(curr, PNG_fcTL)) {
-        } else if (isType(curr, PNG_fdAT)) {
         // --- animation implementation --- */
     }
 
@@ -164,34 +182,32 @@ RGB *parsePng(char *path, int *error) {
         printf("%.2X ", bytestreamIDAT[i]);
     printf("\n");
 
+    /*----====<DECOMPRESSION>====----*/
+    
+    uint16_t infoChecksum;
+    infoChecksum = curr->data[0] * 0xFF + curr->data[1];
+    if (infoChecksum % 31 != 0) return cleanup(error, INVALID_ZLIB_DATA, NULL);
 
-    /*
-     uint16_t infoChecksum;
-     infoChecksum = curr->data[0] * 0xFF + curr->data[1];
-     if (infoChecksum % 31 != 0) return cleanup(error, INVALID_CHUNK_DATA, NULL);
+    uint8_t cmethod, cinfo, fdict, flevel, *dataBlocks, checksum[4];
+    cmethod = curr->data[0] & 0b00001111;
+    cinfo = (curr->data[0] & 0b11110000) >> 4;
+    fdict = (curr->data[1] & 0b00100000) >> 5;
+    flevel = (curr->data[1] & 0b11000000) >> 6;
+    if (cmethod != 8 || cinfo > 7) return cleanup(error, INVALID_ZLIB_DATA, NULL);
 
-     uint8_t cmethod, cinfo, fdict, flevel, *dataBlocks, checksum[4];
-     cmethod = curr->data[0] & 0b00001111;
-     cinfo = (curr->data[0] & 0b11110000) >> 4;
-     fdict = (curr->data[1] & 0b00100000) >> 5;
-     flevel = (curr->data[1] & 0b11000000) >> 6;
-     if (cmethod != 8 || cinfo > 7) return cleanup(error, INVALID_CHUNK_DATA, NULL);
+    uint16_t windowSize;
+    windowSize = pow2(2, cinfo + 8);
 
-     uint32_t windowSize;
-     windowSize = pow2(2, cinfo + 8);
+    dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
+    for (j = 0, i = 2; i < curr->length - 4; ++j, ++i) {
+        dataBlocks[j] = curr->data[i];
+    }
 
-     dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
-     for (j = 0, i = 2; i < curr->length - 4; ++j, ++i) {
-         dataBlocks[j] = curr->data[i];
-     }
+    for (j = 0; i < curr->length; ++j, ++i) {
+        checksum[j] = curr->data[i];
+    }
 
-     for (j = 0; i < curr->length; ++j, ++i) {
-         checksum[j] = curr->data[i];
-     }
-
-     //TODO IMPLEMENT
-     */
-
+    //TODO IMPLEMENT
 
 
 

@@ -7,5 +7,7 @@ this project will read in pngs, both static and animated, and print correspondin
 proper executables will be created at a later date
 
 references:
-https://www.w3.org/TR/png-3/
+https://www.w3.org/TR/png-3/4
+https://www.rfc-editor.org/rfc/rfc1950#section-3
+https://www.ietf.org/rfc/rfc1951.txt
 https://www.youtube.com/watch?v=EFUYNoFRHQI
