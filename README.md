@@ -8,6 +8,7 @@ proper executables will be created at a later date
 
 references:
 https://www.w3.org/TR/png-3/4
-https://www.rfc-editor.org/rfc/rfc1950#section-3
-https://www.ietf.org/rfc/rfc1951.txt
+https://dl.acm.org/doi/pdf/10.17487/RFC1950
+https://dl.acm.org/doi/pdf/10.17487/RFC1951
+
 https://www.youtube.com/watch?v=EFUYNoFRHQI
