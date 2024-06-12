@@ -3,6 +3,8 @@
 #include <stdio.h>
 
 #include <util.h>
+#include <chunk.h>
+#include <deflate.h>
 
 #define SUCCESS 0
 #define INVALID_PNG_HEADER 1
@@ -10,22 +12,13 @@
 #define MISSING_HEADER_CHUNK 3
 #define DISALLOWED_CHUNK 4
 #define MALFORMED_CHUNK_DATA 5
-#define INVALID_ZLIB_DATA 6
-#define MISSING_CHUNK 7
-#define MISORDERED_CHUNK 8
-#define UNIMPLEMENTED_CRITICAL_CHUNK 9
+#define MISORDERED_CHUNK 6
+#define UNIMPLEMENTED_CRITICAL_CHUNK 7
+#define INVALID_ZLIB_DATA 8
 
 #define PNG_HEAD ((const uint8_t[8]) {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a})
-#define PNG_IHDR ((const uint8_t[4]) {0x49, 0x48, 0x44, 0x52})
-#define PNG_PLTE ((const uint8_t[4]) {0x50, 0x4C, 0x54, 0x45})
-#define PNG_IDAT ((const uint8_t[4]) {0x49, 0x44, 0x41, 0x54})
-#define PNG_IEND ((const uint8_t[4]) {0x49, 0x45, 0x4E, 0x44})
-#define PNG_sBIT ((const uint8_t[4]) {0x73, 0x42, 0x49, 0x54})
-#define PNG_acTL ((const uint8_t[4]) {0x61, 0x63, 0x54, 0x4C})
-#define PNG_fcTL ((const uint8_t[4]) {0x66, 0x63, 0x54, 0x4C})
-#define PNG_fdAT ((const uint8_t[4]) {0x66, 0x64, 0x41, 0x54})
 
-static int pngVerify(FILE *file) {
+int pngVerify(FILE *file) {
     uint8_t i, header[8];
     if (file == NULL || fread(header, 1, 8, file) != 8) return 0;
     for (i = 0; i < 8; ++i) 
@@ -34,70 +27,14 @@ static int pngVerify(FILE *file) {
     return 1;
 }
 
-typedef struct Chunk {
-    uint32_t length;
-    uint8_t type[4];
-    uint8_t *data;
-    uint32_t crc;
-    struct Chunk *next;
-} Chunk;
-
-static void freeChunk(Chunk *c) {
-    if (c == NULL) return;
-    free(c->data);
-    freeChunk(c->next);
-}
-
-static int isType(Chunk *chunk, const uint8_t type[4]) {
-    uint8_t i;
-    if (chunk == NULL) return 0;
-    for (i = 0; i < 4; ++i) 
-        if (chunk->type[i] != type[i])
-            return 0;
-    return 1;
-}
-
-static Chunk *chunkList(FILE *file) {
-    if (file == NULL) return NULL;
-
-    Chunk *out = malloc(sizeof(Chunk));
-
-    uint8_t i, byte[1];
-    for (i = out->length = 0; i < 4; ++i) {
-        out->length <<= 8;
-        if (fread(byte, sizeof(uint8_t), 1, file) != 1) return NULL;
-        out->length |= *byte;
-    }
-
-    if (fread(out->type, sizeof(uint8_t), 4, file) != 4) return NULL;
-
-    out->data = malloc(sizeof(uint8_t) * out->length);
-    if (fread(out->data, sizeof(uint8_t), out->length, file) != out->length) return NULL;
-
-    for (i = out->crc = 0; i < 4; ++i) {
-        out->crc <<= 8;
-        if (fread(byte, sizeof(uint8_t), 1, file) != 1) return NULL;
-        out->crc |= *byte;
-    }
-
-    if (!isType(out, PNG_IEND)) {
-        out->next = chunkList(file);
-    } else {
-        out->next = NULL;
-    }
-    
-    return out;
-}
-
 static FILE *file;
 static Chunk *head;
 static RGB *bitmap, *palette;
-static uint8_t *sigBits, *bytestreamIDAT;
+static uint8_t *sigBits, *datastream;
 static RGB *cleanup(int *error, int errorType, RGB *out);
 
 RGB *parsePng(char *path, int *error) {
     Chunk *curr;
-
     file = fopen(path, "rb");
     if (!pngVerify(file)) return cleanup(error, INVALID_PNG_HEADER, NULL);
     head = curr = chunkList(file);
@@ -135,9 +72,9 @@ RGB *parsePng(char *path, int *error) {
             flagIDAT = 1;
 
             j = bytestreamIDATLen;
-            bytestreamIDAT = realloc(bytestreamIDAT, bytestreamIDATLen += curr->length);
+            datastream = realloc(datastream, bytestreamIDATLen += curr->length);
             for (i = 0; i < curr->length; ++i) { 
-                bytestreamIDAT[j + i] = curr->data[i];
+                datastream[j + i] = curr->data[i];
             }
         } else if (isType(curr, PNG_sBIT)) {
             if (flagPLTE || flagIDAT) return cleanup(error, MISORDERED_CHUNK, NULL);
@@ -152,30 +89,32 @@ RGB *parsePng(char *path, int *error) {
         } else if ((curr->type[0] & 0b00100000) == 0) { 
             return cleanup(error, UNIMPLEMENTED_CRITICAL_CHUNK, NULL);
         } else printf("unimplemented chunk: %.4s\n", curr->type);
-
-        /* --- animation implementation --- //
-        // --- animation implementation --- */
     }
 
     printf("idat size: %d\n", bytestreamIDATLen);
     for (i = 0; i < bytestreamIDATLen; ++i)
-        printf("%.2X ", bytestreamIDAT[i]);
+        printf("%.2X ", datastream[i]);
     printf("\n");
 
     /*----====<DECOMPRESSION>====----*/
-    
     uint16_t infoChecksum;
-    infoChecksum = curr->data[0] * 0xFF + curr->data[1];
-    if (infoChecksum % 31 != 0) return cleanup(error, INVALID_ZLIB_DATA, NULL);
+
+    infoChecksum = datastream[0] * 0x100 + datastream[1];
+    printf("%d\n", infoChecksum);  
+    if (infoChecksum % 31 != 0) return cleanup(error, INVALID_ZLIB_DATA, NULL); 
+    printf("checksum passed\n");
 
     uint8_t cmethod, cinfo, fdict, flevel, *dataBlocks, checksum[4];
-    cmethod = curr->data[0] & 0b00001111;
-    cinfo = (curr->data[0] & 0b11110000) >> 4;
-    fdict = (curr->data[1] & 0b00100000) >> 5;
-    flevel = (curr->data[1] & 0b11000000) >> 6;
+    cmethod = datastream[0] & 0b1111;
+    cinfo = (datastream[0] >> 4) & 0b1111;
+    fdict = (datastream[1] >> 5) & 0b1;
+    flevel = (datastream[1] >> 6) & 0b11;
+    printf("%d, %d, %d, %d\n", cmethod, cinfo, fdict, flevel);
     if (cmethod != 8 || cinfo > 7) return cleanup(error, INVALID_ZLIB_DATA, NULL);
 
-    uint16_t windowSize;
+    printf("verification passed\n");
+
+    /*uint16_t windowSize;
     windowSize = pow2(2, cinfo + 8);
 
     dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
@@ -185,7 +124,7 @@ RGB *parsePng(char *path, int *error) {
 
     for (j = 0; i < curr->length; ++j, ++i) {
         checksum[j] = curr->data[i];
-    }
+    }*/
 
     //TODO IMPLEMENT
 
@@ -201,7 +140,7 @@ static RGB *cleanup(int *error, int errorType, RGB *out) {
     if (bitmap != NULL && errorType) free(bitmap);
     if (palette != NULL) free(palette);
     if (sigBits != NULL) free(sigBits);
-    if (bytestreamIDAT != NULL) free(bytestreamIDAT);
+    if (datastream != NULL) free(datastream);
     *error = errorType;
     return out;
 }
