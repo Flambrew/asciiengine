@@ -1,6 +1,7 @@
 #!/bin/bash
 
 OUT_PATH="logs/$(date +"%Y%m%d-%H%M%S")"
+OUT_MAIN="logs/latest.log"
 
 OUT_DIR=$(dirname "$OUT_PATH")
 if [ ! -d "$OUT_DIR" ]; then
@@ -26,3 +27,5 @@ if [ $? -eq 0 ]; then
 else
     echo "compilation failed." | tee -a "$OUT_PATH"
 fi
+
+cp $OUT_PATH $OUT_MAIN
