@@ -14,18 +14,20 @@ while [ -f "$OUT_PATH-$EXEC.log" ]; do
 done
 OUT_PATH="$OUT_PATH-$EXEC.log"
 
-make >> "$OUT_PATH" 2>&1
+make >> "$OUT_MAIN" 2>&1
 if [ $? -eq 0 ]; then
-    echo "//----====<OUTPUT>====----\\\\" >> "$OUT_PATH"
-    if [ "$1" = "gdb" ]; then
-        gdb ./out | tee -a "$OUT_PATH"
+    echo "//----====<OUTPUT>====----\\\\" >> "$OUT_MAIN"
+    if [ "$1" = "-d" ] || [ "$1" = "-debug" ] || [ "$2" = "-d" ] || [ "$2" = "-debug" ]; then
+        gdb ./out | tee -a "$OUT_MAIN"
     else
-        ./out | tee -a "$OUT_PATH"
+        ./out | tee -a "$OUT_MAIN"
     fi
-    echo "\\\\----====<OUTPUT>====----//" >> "$OUT_PATH"
-    make clean >> "$OUT_PATH" 2>&1
+    echo "\\\\----====<OUTPUT>====----//" >> "$OUT_MAIN"
+    make clean >> "$OUT_MAIN" 2>&1
 else
-    echo "compilation failed." | tee -a "$OUT_PATH"
+    echo "compilation failed." | tee -a "$OUT_MAIN"
 fi
 
-cp $OUT_PATH $OUT_MAIN
+if [ "$1" = "-l" ] || [ "$1" = "-log" ] || [ "$2" = "-l" ] || [ "$2" = "-log" ]; then
+    cp "$OUT_MAIN" "$OUT_PATH"
+fi

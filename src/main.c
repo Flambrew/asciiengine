@@ -16,9 +16,6 @@
 #endif
 
 int main() {
-
-    printf("hello world\n");
-
     char shadeMapPath[256], imgPath[256];
     char **shadeMap;
     RGB rgb = {0, 0, 0};
