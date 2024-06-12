@@ -83,30 +83,10 @@ static Chunk *chunkList(FILE *file) {
     if (!isType(out, PNG_IEND)) {
         out->next = chunkList(file);
     } else {
-        out-> next = NULL;
+        out->next = NULL;
     }
     
     return out;
-}
-
-uint32_t *huffmanTree(uint8_t *lengths, uint32_t len) {
-    uint8_t maxlen;
-    uint32_t i, *bitLenCount, code, *nextCode, *out;
-    for (i = 0; i < len; ++i) {
-        if (maxlen < lengths[i]) {
-            maxlen = lengths[i];
-        }
-    }
-
-    malloc(bitLenCount, (sizeof(uint32_t) + 1) * maxlen);
-    malloc(nextCode, (sizeof(uint32_t) + 1) * maxlen);
-    for (i = 1; i <= maxlen; ++i) {
-        bitLenCount[lengths[i]]++;
-    }
-
-    for(i = code = bitLenCount[0] = 0; i < maxlen; ++i) {
-        nextCode[i] = code = (code + bitLenCount[i - 1]) << 1;
-    }
 }
 
 static FILE *file;
