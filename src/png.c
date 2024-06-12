@@ -33,11 +33,11 @@ static RGB *bitmap, *palette;
 static uint8_t *sigBits, *datastream;
 static RGB *cleanup(int *error, int errorType, RGB *out);
 
-RGB *parsePng(char *path, int *error) {
+RGB *allocPNG(char *path, int *error) {
     Chunk *curr;
     file = fopen(path, "rb");
     if (!pngVerify(file)) return cleanup(error, INVALID_PNG_HEADER, NULL);
-    head = curr = chunkList(file);
+    head = curr = allocChunkList(file);
     if (head == NULL) return cleanup(error, INVALID_DATASTREAM, NULL);
 
     uint32_t width, height;
@@ -136,11 +136,15 @@ RGB *parsePng(char *path, int *error) {
 
 static RGB *cleanup(int *error, int errorType, RGB *out) {
     if (file != NULL) fclose(file);
-    if (head != NULL) freeChunk(head);
+    if (head != NULL) freeChunkList(head);
     if (bitmap != NULL && errorType) free(bitmap);
     if (palette != NULL) free(palette);
     if (sigBits != NULL) free(sigBits);
     if (datastream != NULL) free(datastream);
     *error = errorType;
     return out;
+}
+
+void freePNG(RGB *png) {
+    free(png);
 }

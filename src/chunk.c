@@ -19,12 +19,6 @@ typedef struct Chunk {
     struct Chunk *next;
 } Chunk;
 
-void freeChunk(Chunk *c) {
-    if (c == NULL) return;
-    free(c->data);
-    freeChunk(c->next);
-}
-
 int isType(Chunk *chunk, const uint8_t type[4]) {
     uint8_t i;
     if (chunk == NULL) return 0;
@@ -34,7 +28,7 @@ int isType(Chunk *chunk, const uint8_t type[4]) {
     return 1;
 }
 
-Chunk *chunkList(FILE *file) {
+Chunk *allocChunkList(FILE *file) {
     if (file == NULL) return NULL;
 
     Chunk *out = malloc(sizeof(Chunk));
@@ -58,10 +52,16 @@ Chunk *chunkList(FILE *file) {
     }
 
     if (!isType(out, PNG_IEND)) {
-        out->next = chunkList(file);
+        out->next = allocChunkList(file);
     } else {
         out->next = NULL;
     }
     
     return out;
+}
+
+void freeChunkList(Chunk *head) {
+    if (head == NULL) return;
+    free(head->data);
+    freeChunkList(head->next);
 }

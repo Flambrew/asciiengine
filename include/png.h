@@ -20,6 +20,7 @@
 #define PNG_H
 
 int pngVerify(FILE *file);
-RGB *parsePng(char *pngPath, int *error);
+RGB *allocPNG(char *pngPath, int *error);
+void freePNG(RGB *png);
 
 #endif

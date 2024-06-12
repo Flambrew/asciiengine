@@ -30,3 +30,13 @@ void huffmanTree(HNODE *tree, uint32_t len) {
     free(bitLenCounts);
     free(next_code);
 }
+
+typedef struct dataChunk {
+    uint8_t final, type;
+    uint32_t len, nlen;
+    uint8_t *bitstream;
+} DCHUNK;
+
+DCHUNK *allocBlockList();
+
+void freeChunkList(DCHUNK *head);

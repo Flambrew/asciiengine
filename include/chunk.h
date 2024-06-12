@@ -22,8 +22,8 @@ typedef struct Chunk {
     struct Chunk *next;
 } Chunk;
 
-void freeChunk(Chunk *c);
 int isType(Chunk *chunk, const uint8_t type[4]);
-Chunk *chunkList(FILE *file);
+Chunk *allocChunkList(FILE *file);
+void freeChunkList(Chunk *head);
 
 #endif

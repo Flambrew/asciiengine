@@ -21,13 +21,13 @@ int main() {
     RGB rgb = {0, 0, 0};
 
     sprintf(shadeMapPath, "assets%c%s", PATH_SEPARATOR, "shades.bin");
-    shadeMap = getShadeMap(shadeMapPath);
+    shadeMap = allocShadeMap(shadeMapPath);
     getAscii(&rgb, shadeMap);
     freeShadeMap(shadeMap);
 
     int error;
     sprintf(imgPath, "assets%c%s", PATH_SEPARATOR, "test2.png");
-    parsePng(imgPath, &error);
+    allocPNG(imgPath, &error);
 
     printf("finished with error code: %d\n", error);
     return 0;
