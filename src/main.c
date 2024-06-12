@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "png.h"
 #include "ascii.h"
 #include "util.h"
+#include "png.h"
 
 #define MIN(x, y) (((x) < (y) ? (x) : (y)))
 #define MAX(x, y) (((x) > (y) ? (x) : (y)))
@@ -26,7 +26,7 @@ int main() {
     sprintf(shadeMapPath, "assets%c%s", PATH_SEPARATOR, "shades.bin");
     shadeMap = getShadeMap(shadeMapPath);
     getAscii(&rgb, shadeMap);
-    freeStrArr(shadeMap, SHADERANGE);
+    freeShadeMap(shadeMap);
 
     int error;
     sprintf(imgPath, "assets%c%s", PATH_SEPARATOR, "test2.png");

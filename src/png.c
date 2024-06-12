@@ -1,10 +1,10 @@
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
 
-#include <util.h>
-#include <chunk.h>
 #include <deflate.h>
+#include <chunk.h>
+#include <util.h>
 
 #define SUCCESS 0
 #define INVALID_PNG_HEADER 1

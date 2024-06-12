@@ -1,9 +1,6 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
-
-#ifndef CHUNK_H
-#define CHUNK_H
+#include <stdio.h>
 
 #define PNG_IHDR ((const uint8_t[4]) {0x49, 0x48, 0x44, 0x52})
 #define PNG_PLTE ((const uint8_t[4]) {0x50, 0x4C, 0x54, 0x45})
@@ -13,6 +10,9 @@
 #define PNG_acTL ((const uint8_t[4]) {0x61, 0x63, 0x54, 0x4C})
 #define PNG_fcTL ((const uint8_t[4]) {0x66, 0x63, 0x54, 0x4C})
 #define PNG_fdAT ((const uint8_t[4]) {0x66, 0x64, 0x41, 0x54})
+
+#ifndef CHUNK_H
+#define CHUNK_H
 
 typedef struct Chunk {
     uint32_t length;

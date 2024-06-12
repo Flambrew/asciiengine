@@ -8,7 +8,6 @@ typedef struct RGB {
 } RGB;
 
 uint8_t htoi(char c);
-void freeStrArr(char **arr, int len);
 int pow2(int x, int n);
 
 #endif

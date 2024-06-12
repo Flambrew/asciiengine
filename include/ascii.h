@@ -1,11 +1,13 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
 #include "util.h"
 
-#ifndef PIX_ASCII_H
-#define PIX_ASCII_H
+#ifndef ASCII_H
+#define ASCII_H
 
-#define MAXCHARS 10
-#define SHADERANGE 256
-
+char freeShadeMap(char **shadeMap);
 char **getShadeMap(char *shadeBinPath);
 char getAscii(RGB *rgb, char **shadeMap);
 

@@ -14,16 +14,6 @@ int htoi(char c) {
     return -1;
 }
 
-void freeStrArr(char **arr, int len) {
-    int i;
-    for (i = 0; i < len; ++i) {
-        if (arr[i] != NULL) {
-            free(arr[i]);
-        }
-    }
-    free(arr);
-}
-
 int pow2(int x, int n) {
     if (n == 1) return x;
     return x * pow2(x, n - 1);

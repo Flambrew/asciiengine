@@ -11,6 +11,16 @@ static int getShadeHash(RGB *rgb) {
     return (rgb->red + rgb->green + rgb->blue) / 3;
 }
 
+void freeShadeMap(char **shadeMap) {
+    int i;
+    for (i = 0; i < SHADERANGE; ++i) {
+        if (shadeMap[i] != NULL) {
+            free(shadeMap[i]);
+        }
+    }
+    free(shadeMap);
+}
+
 char **getShadeMap(char *shadeBinPath) {
     char **shadeVals;
     shadeVals = malloc(sizeof(char *) * SHADERANGE);
