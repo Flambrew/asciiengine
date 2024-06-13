@@ -30,7 +30,7 @@ int pngVerify(FILE *file) {
 static FILE *file;
 static Chunk *head;
 static RGB *bitmap, *palette;
-static uint8_t *sigBits, *datastream;
+static uint8_t *sigBits, *zlibDatastream;
 static RGB *cleanup(int *error, int errorType, RGB *out);
 
 RGB *allocPNG(char *path, int *error) {
@@ -52,9 +52,9 @@ RGB *allocPNG(char *path, int *error) {
     bitmap = malloc(sizeof(RGB) * width * height);
     curr = curr->next;
 
-    uint32_t bytestreamIDATLen;
+    uint32_t zlibDatastreamLen;
     uint8_t i, j, flagPLTE, flagIDAT;
-    for (bytestreamIDATLen = flagPLTE = flagIDAT = 0; !isType(curr, PNG_IEND); curr = curr->next) {
+    for (zlibDatastreamLen = flagPLTE = flagIDAT = 0; !isType(curr, PNG_IEND); curr = curr->next) {
         if (isType(curr, PNG_PLTE)) {
             if (colorType == 0 || colorType == 4) return cleanup(error, DISALLOWED_CHUNK, NULL);
             if (curr->length % 3 != 0) return cleanup(error, MALFORMED_CHUNK_DATA, NULL);
@@ -71,10 +71,10 @@ RGB *allocPNG(char *path, int *error) {
             if (curr->length < 6) return cleanup(error, MALFORMED_CHUNK_DATA, NULL);
             flagIDAT = 1;
 
-            j = bytestreamIDATLen;
-            datastream = realloc(datastream, bytestreamIDATLen += curr->length);
+            j = zlibDatastreamLen;
+            zlibDatastream = realloc(zlibDatastream, zlibDatastreamLen += curr->length);
             for (i = 0; i < curr->length; ++i) { 
-                datastream[j + i] = curr->data[i];
+                zlibDatastream[j + i] = curr->data[i];
             }
         } else if (isType(curr, PNG_sBIT)) {
             if (flagPLTE || flagIDAT) return cleanup(error, MISORDERED_CHUNK, NULL);
@@ -91,24 +91,23 @@ RGB *allocPNG(char *path, int *error) {
         } else printf("unimplemented chunk: %.4s\n", curr->type);
     }
 
-    printf("idat size: %d\n", bytestreamIDATLen);
-    for (i = 0; i < bytestreamIDATLen; ++i)
-        printf("%.2X ", datastream[i]);
+    printf("idat size: %d\n", zlibDatastreamLen);
+    for (i = 0; i < zlibDatastreamLen; ++i)
+        printf("%.2X ", zlibDatastream[i]);
     printf("\n");
 
     /*----====<DECOMPRESSION>====----*/
     uint16_t infoChecksum;
-
-    infoChecksum = datastream[0] * 0x100 + datastream[1];
+    infoChecksum = zlibDatastream[0] * 0x100 + zlibDatastream[1];
     printf("%d\n", infoChecksum);  
     if (infoChecksum % 31 != 0) return cleanup(error, INVALID_ZLIB_DATA, NULL); 
     printf("checksum passed\n");
 
     uint8_t cmethod, cinfo, fdict, flevel, *dataBlocks, checksum[4];
-    cmethod = datastream[0] & 0b1111;
-    cinfo = (datastream[0] >> 4) & 0b1111;
-    fdict = (datastream[1] >> 5) & 0b1;
-    flevel = (datastream[1] >> 6) & 0b11;
+    cmethod = zlibDatastream[0] & 0b1111;
+    cinfo = (zlibDatastream[0] >> 4) & 0b1111;
+    fdict = (zlibDatastream[1] >> 5) & 0b1;
+    flevel = (zlibDatastream[1] >> 6) & 0b11;
     printf("%d, %d, %d, %d\n", cmethod, cinfo, fdict, flevel);
     if (cmethod != 8 || cinfo > 7) return cleanup(error, INVALID_ZLIB_DATA, NULL);
 
@@ -140,7 +139,7 @@ static RGB *cleanup(int *error, int errorType, RGB *out) {
     if (bitmap != NULL && errorType) free(bitmap);
     if (palette != NULL) free(palette);
     if (sigBits != NULL) free(sigBits);
-    if (datastream != NULL) free(datastream);
+    if (zlibDatastream != NULL) free(zlibDatastream);
     *error = errorType;
     return out;
 }

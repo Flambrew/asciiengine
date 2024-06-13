@@ -6,7 +6,6 @@ typedef struct huffmanNode {
     uint8_t length;
     uint32_t code;
 } HNODE;
-
 void huffmanTree(HNODE *tree, uint32_t len) {
     uint32_t i, maxlen, *bitLenCounts, code, *next_code;
     for (maxlen = i = 1; i <= len; ++i) 
@@ -35,8 +34,31 @@ typedef struct dataChunk {
     uint8_t final, type;
     uint32_t len, nlen;
     uint8_t *bitstream;
+    struct dataChunk *nextChunk;
 } DCHUNK;
 
-DCHUNK *allocBlockList();
+static uint8_t *getBits(uint8_t *datastream, uint32_t bitIndex, uint32_t quantity) {
+    if (quantity == 0) return NULL;
+
+    uint8_t *out;
+    out = malloc((quantity + 7) / 8 * sizeof(uint8_t));
+
+    // finish
+}
+
+DCHUNK *allocBlockList(uint8_t *datastream, uint32_t bitIndex) {
+    DCHUNK *curr;
+
+    curr->final = (datastream[bitIndex / 8] >> (bitIndex % 8)) & 0b1; bitIndex += 1;
+
+    curr->type = (datastream[bitIndex / 8] >> (bitIndex % 8)) & 0b11; bitIndex += 2;
+
+
+    if (!curr->final) {
+        curr->nextChunk = allocBlockList(datastream, bitIndex);
+    }
+    
+    return curr;
+}
 
 void freeChunkList(DCHUNK *head);
