@@ -2,8 +2,9 @@
 
 OUT_PATH="logs/$(date +"%Y%m%d-%H%M%S")"
 OUT_MAIN="logs/latest.log"
+> "$OUT_MAIN"
 
-OUT_DIR=$(dirname "$OUT_PATH")
+OUT_DIR=$(dirname "$OUT_MAIN")
 if [ ! -d "$OUT_DIR" ]; then
     mkdir -p "$OUT_DIR"
 fi

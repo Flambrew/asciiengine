@@ -18,17 +18,21 @@
 int main() {
     char shadeMapPath[256], imgPath[256];
     char **shadeMap;
-    RGB rgb = {0, 0, 0};
 
+    //----====SHADEMAP====----//
+    RGB rgb = {0, 0, 0};
     sprintf(shadeMapPath, "assets%c%s", PATH_SEPARATOR, "shades.bin");
     shadeMap = allocShadeMap(shadeMapPath);
     getAscii(&rgb, shadeMap);
     freeShadeMap(shadeMap);
 
+    //----====READ_PNG====----//
     int error;
+    RGB *image;
     sprintf(imgPath, "assets%c%s", PATH_SEPARATOR, "test2.png");
-    allocPNG(imgPath, &error);
-
+    image = allocPNG(imgPath, &error);
+    free(image);
     printf("finished with error code: %d\n", error);
+
     return 0;
 }

@@ -31,11 +31,14 @@ void allocHuffmanTree(HNODE *tree, uint32_t len) {
     free(next_code);
 }
 
-static uint32_t index;
-static uint8_t *stream;
+static uint32_t index = 0;
+static uint8_t *stream = NULL;
 
 static uint8_t nextBit() {
-    return (stream[index / 8] >> (index++ % 8)) & 0b1;
+    uint8_t bit;
+    bit = (stream[index / 8] >> (index % 8)) & 0b1;
+    ++index;
+    return bit;
 }
 
 static uint8_t nextByte() {
@@ -53,9 +56,9 @@ static void endByte() {
 
 // STORE THE LEN IN THE FIRST 4 BYTES
 
-uint8_t *allocExtract(uint8_t *datastream, uint32_t firstBit) {
+uint8_t *allocDeflate(uint8_t *datastream) {
     stream = datastream;
-    index = firstBit;
+    index = 0;
 
     uint8_t *outstream;
     outstream = malloc(4 * sizeof(uint8_t));
@@ -72,16 +75,28 @@ uint8_t *allocExtract(uint8_t *datastream, uint32_t firstBit) {
         if (type == 0b00) {
             endByte();
             len = nextByte() * 256 + nextByte();
-            if (len ^ 0xFFFF != nextByte() * 256 + nextByte()) {
+            if ((len ^ 0xFFFF) != (nextByte() * 256 + nextByte())) {
                 return NULL;
             }
 
             outstream = realloc(outstream, (*outlen + len + 7) / 8);
             for (i = *outlen; i < (*outlen += len); ++i) {
-                outstream[i / 8] |= (nextBit() << (8 - i % 8));
+                outstream[i / 8] |= (nextBit() << (7 - i % 8));
             }
         } else if (type != 0b11) {
+            if (type == 0b10) {
+                // READ REPRESENTATION OF CODE TREES
+            }
+            while (1) {
+                len = 0; // DECODE LITERAL/LENGTH VALUE
+                if (len < 256) {
+                    
+                } else if (len == 256) {
+                    break;
+                } else {
 
+                }
+            }
         } else return NULL;
 
 
@@ -89,3 +104,5 @@ uint8_t *allocExtract(uint8_t *datastream, uint32_t firstBit) {
     
     return outstream;
 }
+
+// 0100000000000000000000000000000010010010010010001101101001101110

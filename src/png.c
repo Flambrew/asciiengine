@@ -91,41 +91,31 @@ RGB *allocPNG(char *path, int *error) {
         } else printf("unimplemented chunk: %.4s\n", curr->type);
     }
 
-    printf("idat size: %d\n", zlibDatastreamLen);
-    for (i = 0; i < zlibDatastreamLen; ++i)
-        printf("%.2X ", zlibDatastream[i]);
-    printf("\n");
-
-    /*----====<DECOMPRESSION>====----*/
-    uint16_t infoChecksum;
+    uint16_t infoChecksum, windowSize;
+    uint8_t cmethod, cinfo, fdict, *zlibCompressed, checksum[4];
     infoChecksum = zlibDatastream[0] * 0x100 + zlibDatastream[1];
-    printf("%d\n", infoChecksum);  
-    if (infoChecksum % 31 != 0) return cleanup(error, INVALID_ZLIB_DATA, NULL); 
-    printf("checksum passed\n");
-
-    uint8_t cmethod, cinfo, fdict, flevel, *dataBlocks, checksum[4];
+    if (infoChecksum % 31 != 0) return cleanup(error, INVALID_ZLIB_DATA, NULL);
     cmethod = zlibDatastream[0] & 0b1111;
     cinfo = (zlibDatastream[0] >> 4) & 0b1111;
     fdict = (zlibDatastream[1] >> 5) & 0b1;
-    flevel = (zlibDatastream[1] >> 6) & 0b11;
-    printf("%d, %d, %d, %d\n", cmethod, cinfo, fdict, flevel);
     if (cmethod != 8 || cinfo > 7) return cleanup(error, INVALID_ZLIB_DATA, NULL);
-
-    printf("verification passed\n");
-
-    /*uint16_t windowSize;
     windowSize = pow2(2, cinfo + 8);
+    
+    printf("%d, %d\n", fdict, windowSize);
 
-    dataBlocks = malloc(sizeof(uint8_t) * curr->length - 6);
-    for (j = 0, i = 2; i < curr->length - 4; ++j, ++i) {
-        dataBlocks[j] = curr->data[i];
+    for (j = 0, i = 2; fdict && j < 4; ++j, ++i) {
+        // something something fdict
     }
 
-    for (j = 0; i < curr->length; ++j, ++i) {
+    zlibCompressed = malloc(sizeof(uint8_t) * (zlibDatastreamLen - i - 4));
+    for (j = 0; i < zlibDatastreamLen - 4; ++j, ++i) 
+        zlibCompressed[j] = curr->data[i];
+    for (j = 0; i < zlibDatastreamLen; ++j, ++i) 
         checksum[j] = curr->data[i];
-    }*/
+    
 
-    //TODO IMPLEMENT
+    uint8_t *zlibExtracted, *outlen;
+    zlibExtracted = allocDeflate(zlibCompressed, outlen);
 
 
 
@@ -134,16 +124,12 @@ RGB *allocPNG(char *path, int *error) {
 }
 
 static RGB *cleanup(int *error, int errorType, RGB *out) {
+    *error = errorType;
     if (file != NULL) fclose(file);
     if (head != NULL) freeChunkList(head);
     if (bitmap != NULL && errorType) free(bitmap);
     if (palette != NULL) free(palette);
     if (sigBits != NULL) free(sigBits);
     if (zlibDatastream != NULL) free(zlibDatastream);
-    *error = errorType;
     return out;
-}
-
-void freePNG(RGB *png) {
-    free(png);
 }

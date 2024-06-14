@@ -1,0 +1,13 @@
+make: 'out' is up to date.
+//----====<OUTPUT>====----\\
+unimplemented chunk: sRGB
+unimplemented chunk: gAMA
+unimplemented chunk: pHYs
+0, 512
+finished with error code: 0
+\\----====<OUTPUT>====----//
+rm -f obj/*.o out
+rmdir obj
+rm *.out
+rm: cannot remove '*.out': No such file or directory
+make: *** [makefile:39: clean] Error 1

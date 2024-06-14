@@ -11,6 +11,6 @@ typedef struct huffmanNode {
 } HNODE;
 
 void huffmanTree(HNODE *tree, uint32_t len);
-uint8_t *allocExtract(uint8_t *head, uint32_t firstBit, uint32_t *outlen);
+uint8_t *allocDeflate(uint8_t *head, uint32_t *outlen);
 
 #endif
