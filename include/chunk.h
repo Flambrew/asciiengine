@@ -14,16 +14,16 @@
 #ifndef CHUNK_H
 #define CHUNK_H
 
-typedef struct Chunk {
+typedef struct pngChunk {
     uint32_t length;
     uint8_t type[4];
     uint8_t *data;
     uint32_t crc;
-    struct Chunk *next;
-} Chunk;
+    struct pngChunk *next;
+} PCHUNK;
 
-int isType(Chunk *chunk, const uint8_t type[4]);
-Chunk *allocChunkList(FILE *file);
-void freeChunkList(Chunk *head);
+int isType(PCHUNK *chunk, const uint8_t type[4]);
+PCHUNK *allocChunkList(FILE *file);
+void freeChunkList(PCHUNK *head);
 
 #endif

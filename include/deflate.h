@@ -11,15 +11,6 @@ typedef struct huffmanNode {
 } HNODE;
 
 void huffmanTree(HNODE *tree, uint32_t len);
-
-typedef struct dataChunk {
-    uint8_t final, type;
-    uint32_t len, nlen;
-    uint8_t *bitstream;
-} DCHUNK;
-
-DCHUNK *allocBlockList();
-
-void freeBlockList(DCHUNK *head);
+uint8_t *allocExtract(uint8_t *head, uint32_t firstBit, uint32_t *outlen);
 
 #endif

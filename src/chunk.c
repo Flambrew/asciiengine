@@ -11,15 +11,15 @@
 #define PNG_fcTL ((const uint8_t[4]) {0x66, 0x63, 0x54, 0x4C})
 #define PNG_fdAT ((const uint8_t[4]) {0x66, 0x64, 0x41, 0x54})
 
-typedef struct Chunk {
+typedef struct pngChunk {
     uint32_t length;
     uint8_t type[4];
     uint8_t *data;
     uint32_t crc;
-    struct Chunk *next;
-} Chunk;
+    struct pngChunk *next;
+} PCHUNK;
 
-int isType(Chunk *chunk, const uint8_t type[4]) {
+int isType(PCHUNK *chunk, const uint8_t type[4]) {
     uint8_t i;
     if (chunk == NULL) return 0;
     for (i = 0; i < 4; ++i) 
@@ -28,10 +28,11 @@ int isType(Chunk *chunk, const uint8_t type[4]) {
     return 1;
 }
 
-Chunk *allocChunkList(FILE *file) {
+PCHUNK *allocChunkList(FILE *file) {
     if (file == NULL) return NULL;
 
-    Chunk *out = malloc(sizeof(Chunk));
+    PCHUNK *out;
+    out = malloc(sizeof(PCHUNK));
 
     uint8_t i, byte[1];
     for (i = out->length = 0; i < 4; ++i) {
@@ -60,7 +61,7 @@ Chunk *allocChunkList(FILE *file) {
     return out;
 }
 
-void freeChunkList(Chunk *head) {
+void freeChunkList(PCHUNK *head) {
     if (head == NULL) return;
     free(head->data);
     freeChunkList(head->next);

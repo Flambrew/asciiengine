@@ -28,13 +28,13 @@ int pngVerify(FILE *file) {
 }
 
 static FILE *file;
-static Chunk *head;
+static PCHUNK *head;
 static RGB *bitmap, *palette;
 static uint8_t *sigBits, *zlibDatastream;
 static RGB *cleanup(int *error, int errorType, RGB *out);
 
 RGB *allocPNG(char *path, int *error) {
-    Chunk *curr;
+    PCHUNK *curr;
     file = fopen(path, "rb");
     if (!pngVerify(file)) return cleanup(error, INVALID_PNG_HEADER, NULL);
     head = curr = allocChunkList(file);

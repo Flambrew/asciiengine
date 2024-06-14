@@ -6,7 +6,8 @@ typedef struct huffmanNode {
     uint8_t length;
     uint32_t code;
 } HNODE;
-void huffmanTree(HNODE *tree, uint32_t len) {
+
+void allocHuffmanTree(HNODE *tree, uint32_t len) {
     uint32_t i, maxlen, *bitLenCounts, code, *next_code;
     for (maxlen = i = 1; i <= len; ++i) 
         if (maxlen < tree[i].length) 
@@ -30,35 +31,61 @@ void huffmanTree(HNODE *tree, uint32_t len) {
     free(next_code);
 }
 
-typedef struct dataChunk {
-    uint8_t final, type;
-    uint32_t len, nlen;
-    uint8_t *bitstream;
-    struct dataChunk *nextChunk;
-} DCHUNK;
+static uint32_t index;
+static uint8_t *stream;
 
-static uint8_t *getBits(uint8_t *datastream, uint32_t bitIndex, uint32_t quantity) {
-    if (quantity == 0) return NULL;
-
-    uint8_t *out;
-    out = malloc((quantity + 7) / 8 * sizeof(uint8_t));
-
-    // finish
+static uint8_t nextBit() {
+    return (stream[index / 8] >> (index++ % 8)) & 0b1;
 }
 
-DCHUNK *allocBlockList(uint8_t *datastream, uint32_t bitIndex) {
-    DCHUNK *curr;
+static uint8_t nextByte() {
+    uint8_t i, out;
+    for (i = out = 0; i < 8; ++i) 
+        out = (out << 1) + nextBit();
+    return out;
+}
 
-    curr->final = (datastream[bitIndex / 8] >> (bitIndex % 8)) & 0b1; bitIndex += 1;
-
-    curr->type = (datastream[bitIndex / 8] >> (bitIndex % 8)) & 0b11; bitIndex += 2;
-
-
-    if (!curr->final) {
-        curr->nextChunk = allocBlockList(datastream, bitIndex);
+static void endByte() {
+    while (index % 8 != 0) {
+        ++index;
     }
-    
-    return curr;
 }
 
-void freeChunkList(DCHUNK *head);
+// STORE THE LEN IN THE FIRST 4 BYTES
+
+uint8_t *allocExtract(uint8_t *datastream, uint32_t firstBit) {
+    stream = datastream;
+    index = firstBit;
+
+    uint8_t *outstream;
+    outstream = malloc(4 * sizeof(uint8_t));
+
+    uint32_t *outlen;
+    outlen = (uint32_t *) outstream;
+    *outlen = 32;
+
+    uint8_t i, final, type, len;
+    do {
+        final = nextBit();
+        type = (nextBit() << 1) + nextBit();
+
+        if (type == 0b00) {
+            endByte();
+            len = nextByte() * 256 + nextByte();
+            if (len ^ 0xFFFF != nextByte() * 256 + nextByte()) {
+                return NULL;
+            }
+
+            outstream = realloc(outstream, (*outlen + len + 7) / 8);
+            for (i = *outlen; i < (*outlen += len); ++i) {
+                outstream[i / 8] |= (nextBit() << (8 - i % 8));
+            }
+        } else if (type != 0b11) {
+
+        } else return NULL;
+
+
+    } while (!final);
+    
+    return outstream;
+}
