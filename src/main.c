@@ -16,6 +16,8 @@
 #endif
 
 int main() {
+    setvbuf(stdout, NULL, _IOLBF, 0);
+    
     char shadeMapPath[256], imgPath[256];
     char **shadeMap;
 
