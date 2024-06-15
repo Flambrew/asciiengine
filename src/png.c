@@ -109,13 +109,16 @@ RGB *allocPNG(char *path, int *error) {
 
     zlibCompressed = malloc(sizeof(uint8_t) * (zlibDatastreamLen - i - 4));
     for (j = 0; i < zlibDatastreamLen - 4; ++j, ++i) 
-        zlibCompressed[j] = curr->data[i];
+        zlibCompressed[j] = zlibDatastream[i];
     for (j = 0; i < zlibDatastreamLen; ++j, ++i) 
-        checksum[j] = curr->data[i];
+        checksum[j] = zlibDatastream[i];
+    
     
 
+
+
     uint8_t *zlibExtracted, *outlen;
-    zlibExtracted = allocDeflate(zlibCompressed, outlen);
+    zlibExtracted = allocDeflate(zlibCompressed);
 
 
 

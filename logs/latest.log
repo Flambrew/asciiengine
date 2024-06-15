@@ -1,9 +1,34 @@
-make: 'out' is up to date.
+gcc -Wall -g -Iinclude -c src/ascii.c -o obj/ascii.o
+gcc -Wall -g -Iinclude -c src/chunk.c -o obj/chunk.o
+gcc -Wall -g -Iinclude -c src/deflate.c -o obj/deflate.o
+gcc -Wall -g -Iinclude -c src/main.c -o obj/main.o
+gcc -Wall -g -Iinclude -c src/png.c -o obj/png.o
+src/png.c: In function ‘allocPNG’:
+src/png.c:120:30: warning: unused variable ‘outlen’ [-Wunused-variable]
+  120 |     uint8_t *zlibExtracted, *outlen;
+      |                              ^~~~~~
+src/png.c:120:14: warning: variable ‘zlibExtracted’ set but not used [-Wunused-but-set-variable]
+  120 |     uint8_t *zlibExtracted, *outlen;
+      |              ^~~~~~~~~~~~~
+src/png.c:95:53: warning: variable ‘checksum’ set but not used [-Wunused-but-set-variable]
+   95 |     uint8_t cmethod, cinfo, fdict, *zlibCompressed, checksum[4];
+      |                                                     ^~~~~~~~
+src/png.c:44:34: warning: variable ‘interlace’ set but not used [-Wunused-but-set-variable]
+   44 |     uint8_t bitDepth, colorType, interlace;
+      |                                  ^~~~~~~~~
+src/png.c:44:13: warning: variable ‘bitDepth’ set but not used [-Wunused-but-set-variable]
+   44 |     uint8_t bitDepth, colorType, interlace;
+      |             ^~~~~~~~
+gcc -Wall -g -Iinclude -c src/util.c -o obj/util.o
+gcc -Wall -g -o out obj/ascii.o obj/chunk.o obj/deflate.o obj/main.o obj/png.o obj/util.o
 //----====<OUTPUT>====----\\
 unimplemented chunk: sRGB
 unimplemented chunk: gAMA
 unimplemented chunk: pHYs
 0, 512
+compress
+	dynamic
+0 0 1 1 0 0 0 0 0 0 1 1 0 0 0 0 1 1 0 1 0 0 0 1 0 1 1 1 1 0 1 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 0 1 1 0 0 0 0 1 1 1 1 1 1 1 1 1 0 1 0 1 0 0 1 0 1 1 0 1 1 0 0 0 1 0 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 0 0 0 1 1 1 0 1 0 0 0 1 1 0 1 1 1 1 0 0 1 1 1 0 1 0 0 1 0 0 1 1 1 1 
 finished with error code: 0
 \\----====<OUTPUT>====----//
 rm -f obj/*.o out
